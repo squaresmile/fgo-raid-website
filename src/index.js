@@ -1,4 +1,4 @@
-import { formatDistanceStrict } from "date-fns";
+import { formatDistanceToNowStrict } from "date-fns";
 import { format } from "date-fns-tz";
 
 async function main() {
@@ -10,7 +10,7 @@ async function main() {
     var etaText = document.createElement("p");
     var etaDate = new Date(eta["ETA"] * 1000);
     var dateString = format(etaDate, "M/d HH:mm zzz");
-    var difference = formatDistanceStrict(etaDate, Date.now(), {
+    var difference = formatDistanceToNowStrict(etaDate, {
       addSuffix: true,
       roundingMethod: "floor",
     });
