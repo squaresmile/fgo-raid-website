@@ -68,6 +68,17 @@ async function main() {
       etaText.innerHTML = `${eta["Boss"]}: ${difference} (${dateString})`;
       etaTextDiv.appendChild(etaText);
     }
+    let upcomingBosses = etaData.raidsInLine;
+    if (upcomingBosses.length !== 0) {
+      let nextBosses = document.createElement("p");
+      let bossesString = "";
+      if (upcomingBosses.length > 1) {
+        bossesString += upcomingBosses.slice(0, -1).join(", ") + " and ";
+      }
+      bossesString += upcomingBosses.slice(-1);
+      nextBosses.innerHTML = `${bossesString} in line to start after one of the raids above finish.`;
+      etaTextDiv.appendChild(nextBosses);
+    }
   }
 }
 main();
