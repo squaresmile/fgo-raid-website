@@ -1,13 +1,13 @@
 import { formatDistanceToNowStrict, formatDistanceToNow } from "date-fns";
 import { format } from "date-fns-tz";
 
-function createPText(string) {
+function createPText(string: string) {
   let newPElement = document.createElement("p");
   newPElement.textContent = string;
   return newPElement;
 }
 
-function futureStrings(timestamp, strict) {
+function futureStrings(timestamp: number, strict: boolean) {
   let futureDate = new Date(timestamp * 1000);
   let futureString = format(futureDate, "M/d HH:mm zzz");
   let difference = "";
@@ -24,15 +24,24 @@ function futureStrings(timestamp, strict) {
   return [futureString, difference];
 }
 
-function calcAPGain(timestamp) {
-  let APGain = (timestamp * 1000 - new Date()) / 1000 / 60 / 5;
+function calcAPGain(timestamp: number) {
+  let APGain = (timestamp * 1000 - Date.now()) / 1000 / 60 / 5;
   let boundedAPGain = Math.max(Math.floor(APGain), 0);
   let APText = `${boundedAPGain} AP will regen until the next raids.`;
   return createPText(APText);
 }
 
+interface EtaData {
+  eta: { Boss: string; ETA: number }[];
+  nextRaid: {
+    bosses: string[];
+    startTime: number;
+  };
+  raidsInLine: string[];
+}
+
 async function main() {
-  const etaData = await fetch("data/eta.json").then((response) =>
+  const etaData: EtaData = await fetch("data/eta.json").then((response) =>
     response.json()
   );
   const etaTextDiv = document.getElementById("etaText");
@@ -42,7 +51,7 @@ async function main() {
     if (etaData.nextRaid.startTime === 0) {
       const raidSchedule = [1587859200, 1587945600, 1588118400];
       let upcomingRaids = raidSchedule.filter(
-        (timestamp) => timestamp * 1000 > new Date()
+        (timestamp) => timestamp * 1000 > Date.now()
       );
       let nextRaid = Math.min(...upcomingRaids);
       if (nextRaid !== 0) {
