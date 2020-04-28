@@ -31,13 +31,8 @@ function calcAPGain(timestamp: number) {
   return createPText(APText);
 }
 
-class BossEta {
-  Boss: string;
-  ETA: number;
-}
-
 class EtaData {
-  eta: BossEta[];
+  eta: { Boss: string; ETA: number }[];
   nextRaid: {
     bosses: string[];
     startTime: number;
