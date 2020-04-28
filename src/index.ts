@@ -31,7 +31,7 @@ function calcAPGain(timestamp: number) {
   return createPText(APText);
 }
 
-class EtaData {
+interface EtaData {
   eta: { Boss: string; ETA: number }[];
   nextRaid: {
     bosses: string[];
