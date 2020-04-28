@@ -24,7 +24,7 @@ function futureStrings(timestamp, strict) {
   return [futureString, difference];
 }
 
-function APGain(timestamp) {
+function calcAPGain(timestamp) {
   let APGain = (timestamp * 1000 - new Date()) / 1000 / 60 / 5;
   let boundedAPGain = Math.max(Math.floor(APGain), 0);
   let APText = `${boundedAPGain} AP will regen until the next raids.`;
@@ -49,7 +49,7 @@ async function main() {
         let [dateString, difference] = futureStrings(nextRaid, false);
         let etaText = `Upcoming raids ${difference} (${dateString}).`;
         etaTextDiv.appendChild(createPText(etaText));
-        etaTextDiv.appendChild(APGain(nextRaid));
+        etaTextDiv.appendChild(calcAPGain(nextRaid));
       }
     } else {
       let [dateString, difference] = futureStrings(
@@ -61,7 +61,7 @@ async function main() {
         bosses.slice(0, -1).join(", ") + " and " + bosses.slice(-1);
       let etaText = `Upcoming ${bossesString} raids ${difference} (${dateString}).`;
       etaTextDiv.appendChild(createPText(etaText));
-      etaTextDiv.appendChild(APGain(etaData.nextRaid.startTime));
+      etaTextDiv.appendChild(calcAPGain(etaData.nextRaid.startTime));
     }
   } else {
     for (const eta of etaData.eta) {
