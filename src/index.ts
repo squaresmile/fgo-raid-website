@@ -31,7 +31,7 @@ function calcAPGain(timestamp: number) {
   return createPText(APText);
 }
 
-function bossesListString(bosses: string[], prefix="") {
+function bossesListString(bosses: string[], prefix = "") {
   let bossesString = prefix;
   if (bosses.length > 1) {
     bossesString += bosses.slice(0, -1).join(", ") + " and ";
@@ -58,12 +58,18 @@ async function main() {
     let noRaid = `No ongoing raid at the moment.`;
     etaTextDiv.appendChild(createPText(noRaid));
     if (etaData.nextRaid.startTime === 0) {
-      const raidSchedule = [1587859200, 1587945600, 1588118400];
+      const raidSchedule = [
+        1587715200,
+        1587772800,
+        1587859200,
+        1587945600,
+        1588118400,
+      ];
       let upcomingRaids = raidSchedule.filter(
         (timestamp) => timestamp * 1000 > Date.now()
       );
-      let nextRaid = Math.min(...upcomingRaids);
-      if (nextRaid !== 0) {
+      if (upcomingRaids.length > 0) {
+        let nextRaid = Math.min(...upcomingRaids);
         let [dateString, difference] = futureStrings(nextRaid, false);
         let etaText = `Upcoming raids ${difference} (${dateString}).`;
         etaTextDiv.appendChild(createPText(etaText));
