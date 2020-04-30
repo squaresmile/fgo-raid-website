@@ -31,6 +31,15 @@ function calcAPGain(timestamp: number) {
   return createPText(APText);
 }
 
+function bossesListString(bosses: string[], prefix="") {
+  let bossesString = prefix;
+  if (bosses.length > 1) {
+    bossesString += bosses.slice(0, -1).join(", ") + " and ";
+  }
+  bossesString += bosses.slice(-1);
+  return bossesString;
+}
+
 interface EtaData {
   eta: { Boss: string; ETA: number }[];
   nextRaid: {
@@ -65,9 +74,7 @@ async function main() {
         etaData.nextRaid.startTime,
         false
       );
-      let bosses = etaData.nextRaid.bosses;
-      let bossesString =
-        bosses.slice(0, -1).join(", ") + " and " + bosses.slice(-1);
+      let bossesString = bossesListString(etaData.nextRaid.bosses);
       let etaText = `Upcoming ${bossesString} raids ${difference} (${dateString}).`;
       etaTextDiv.appendChild(createPText(etaText));
       etaTextDiv.appendChild(calcAPGain(etaData.nextRaid.startTime));
@@ -80,11 +87,7 @@ async function main() {
     }
     let upcomingBosses = etaData.raidsInLine;
     if (upcomingBosses.length !== 0) {
-      let bossesString = "";
-      if (upcomingBosses.length > 1) {
-        bossesString += upcomingBosses.slice(0, -1).join(", ") + " and ";
-      }
-      bossesString += upcomingBosses.slice(-1);
+      let bossesString = bossesListString(upcomingBosses);
       let nextBosses = `${bossesString} in line to start.`;
       etaTextDiv.appendChild(createPText(nextBosses));
     }
