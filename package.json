@@ -16,7 +16,8 @@
   "license": "ISC",
   "dependencies": {
     "date-fns": "^2.13.0",
-    "date-fns-tz": "^1.0.10"
+    "date-fns-tz": "^1.0.10",
+    "highcharts": "^8.1.0"
   },
   "devDependencies": {
     "awesome-typescript-loader": "^5.2.1",

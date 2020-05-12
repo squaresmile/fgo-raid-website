@@ -1,10 +1,31 @@
 import { formatDistanceToNowStrict, formatDistanceToNow } from "date-fns";
 import { format } from "date-fns-tz";
+import * as Highcharts from "highcharts";
 
 function createPText(string: string) {
   let newPElement = document.createElement("p");
   newPElement.textContent = string;
   return newPElement;
+}
+
+function diffArray(origArray: number[]) {
+  let startArray = origArray.slice(0, -1);
+  let endArray = origArray.slice(1);
+  let result = [];
+  for (var i = 0; i < startArray.length; i++) {
+    result.push(endArray[i] - startArray[i]);
+  }
+  return result;
+}
+
+function rate(dataArray: number[], timeArray: number[]) {
+  let dataDiff = diffArray(dataArray);
+  let timeDiff = diffArray(timeArray);
+  let result = [];
+  for (var i = 0; i < dataDiff.length; i++) {
+    result.push(Math.round(dataDiff[i] / timeDiff[i]));
+  }
+  return result;
 }
 
 function futureStrings(timestamp: number, strict: boolean) {
@@ -47,6 +68,11 @@ interface EtaData {
     startTime: number;
   };
   raidsInLine: string[];
+}
+
+interface RaidData {
+  phase: number;
+  data: number[][];
 }
 
 async function main() {
@@ -98,5 +124,38 @@ async function main() {
       etaTextDiv.appendChild(createPText(nextBosses));
     }
   }
+
+  const raidData: RaidData[] = await fetch("data.json").then((response) =>
+    response.json()
+  );
+  let phase4data = raidData[0];
+  document.addEventListener("DOMContentLoaded", function () {
+    var myChart = Highcharts.chart("container", {
+      chart: {
+        type: "bar",
+      },
+      title: {
+        text: "Fruit Consumption",
+      },
+      xAxis: {
+        categories: ["Apples", "Bananas", "Oranges"],
+      },
+      yAxis: {
+        title: {
+          text: "Fruit eaten",
+        },
+      },
+      series: [
+        {
+          name: "Jane",
+          data: [1, 0, 4],
+        },
+        {
+          name: "John",
+          data: [5, 7, 3],
+        },
+      ],
+    });
+  });
 }
 main();
