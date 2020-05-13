@@ -1,6 +1,10 @@
 import { formatDistanceToNowStrict, formatDistanceToNow } from "date-fns";
 import { format } from "date-fns-tz";
 import * as Highcharts from "highcharts";
+import Accessibility from "highcharts/modules/accessibility";
+import Exporting from "highcharts/modules/exporting";
+import ExportData from "highcharts/modules/export-data";
+import Boost from "highcharts/modules/boost";
 
 function createPText(string) {
   let newPElement = document.createElement("p");
@@ -10,7 +14,7 @@ function createPText(string) {
 
 function highChartsArray(dataArray, timeArray) {
   let outArray = [];
-  for (var i = 0; i < dataArray.length; i++) {
+  for (let i = 0; i < dataArray.length; i++) {
     outArray.push([timeArray[i] * 1000, dataArray[i]]);
   }
   return outArray;
@@ -20,7 +24,7 @@ function diffArray(origArray) {
   let startArray = origArray.slice(0, -1);
   let endArray = origArray.slice(1);
   let result = [];
-  for (var i = 0; i < startArray.length; i++) {
+  for (let i = 0; i < startArray.length; i++) {
     result.push(endArray[i] - startArray[i]);
   }
   return result;
@@ -30,7 +34,7 @@ function rate(dataArray, timeArray) {
   let dataDiff = diffArray(dataArray);
   let timeDiff = diffArray(timeArray);
   let result = [];
-  for (var i = 0; i < dataDiff.length; i++) {
+  for (let i = 0; i < dataDiff.length; i++) {
     result.push(Math.round(dataDiff[i] / timeDiff[i]));
   }
   return result;
@@ -67,6 +71,104 @@ function bossesListString(bosses, prefix = "") {
   }
   bossesString += bosses.slice(-1);
   return bossesString;
+}
+
+function genOpts(data1, data2) {
+  return {
+    chart: {
+      style: {
+        fontFamily: "Fira Sans",
+      },
+      zoomType: "x",
+      height: 500,
+    },
+    title: {
+      text: "GUDAGUDA 2 rerun points",
+      style: {
+        fontSize: "1.5em",
+      },
+    },
+    xAxis: {
+      title: {
+        text: "Pacific Time",
+        style: {
+          fontSize: "1.25em",
+        },
+      },
+      type: "datetime",
+      gridLineWidth: 1,
+      crosshair: {
+        // width: 2,
+        // color: "gray",
+        dashStyle: "Dash",
+      },
+      labels: {
+        style: {
+          fontSize: "1.15em",
+        },
+      },
+      // events: {
+      //   setExtremes: syncExtremes,
+      // },
+    },
+    yAxis: {
+      title: {
+        text: "Points",
+        style: {
+          fontSize: "1.25em",
+        },
+      },
+      labels: {
+        style: {
+          fontSize: "1.15em",
+        },
+      },
+    },
+    tooltip: {
+      shadow: false,
+      animation: false,
+      shared: true,
+      style: {
+        fontSize: "1.15em",
+      },
+      positioner: function () {
+        return { x: 70, y: 50 };
+      },
+    },
+    legend: {
+      enabled: true,
+    },
+    credits: {
+      enabled: false,
+    },
+    plotOptions: {
+      line: {
+        marker: {
+          radius: 4,
+        },
+        lineWidth: 2,
+        states: {
+          hover: false,
+        },
+        threshold: null,
+        boostThreshold: 1,
+      },
+    },
+    series: [
+      {
+        type: "line",
+        name: "Oda Bakufu",
+        data: data1,
+        color: "#5FAAD4",
+      },
+      {
+        type: "line",
+        name: "Shinshengumi",
+        data: data2,
+        color: "#A22A2A",
+      },
+    ],
+  };
 }
 
 async function main() {
@@ -127,6 +229,78 @@ async function main() {
   let outArray = highChartsArray(odaArray, timeArray);
   let outArray2 = highChartsArray(shinshengumiArray, timeArray);
 
+  Accessibility(Highcharts);
+  Exporting(Highcharts);
+  ExportData(Highcharts);
+  Boost(Highcharts);
+
+  /**
+   * Too slow at the moment
+   * In order to synchronize tooltips and crosshairs, override the
+   * built-in events with handlers defined on the parent element.
+   */
+  // ["mousemove", "touchmove", "touchstart"].forEach(function (eventType) {
+  //   document.getElementById("charts").addEventListener(eventType, function (e) {
+  //     for (let i = 0; i < Highcharts.charts.length; i++) {
+  //       let chart = Highcharts.charts[i];
+  //       let event = chart.pointer.normalize(e); // Find coordinates within the chart
+  //       let point;
+  //       for (let j = 0; j < chart.series.length && !point; j++) {
+  //         point = chart.series[j].searchPoint(event, true);
+  //       }
+  //       if (point) {
+  //         if (e.type === "mousemove") {
+  //           point.onMouseOver();
+  //           chart.xAxis[0].drawCrosshair(event, point);
+  //         } else {
+  //           point.onMouseOut();
+  //           chart.tooltip.hide(point);
+  //           chart.xAxis[0].hideCrosshair();
+  //         }
+  //       }
+  //     }
+  //   });
+  // });
+
+  /**
+   * Override the reset function, we don't need to hide the tooltips and
+   * crosshairs.
+   */
+  // Highcharts.Pointer.prototype.reset = function () {
+  //   return undefined;
+  // };
+
+  /**
+   * Highlight a point by showing tooltip, setting hover state and draw crosshair
+   */
+  // Highcharts.Point.prototype.highlight = function (event) {
+  //   event = this.series.chart.pointer.normalize(event);
+  //   this.onMouseOver(); // Show the hover marker
+  //   this.series.chart.tooltip.refresh([this]); // Show the tooltip
+  //   this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
+  // };
+
+  /**
+   * Synchronize zooming through the setExtremes event handler.
+   */
+  // function syncExtremes(e) {
+  //   var thisChart = this.chart;
+
+  //   if (e.trigger !== "syncExtremes") {
+  //     // Prevent feedback loop
+  //     Highcharts.each(Highcharts.charts, function (chart) {
+  //       if (chart !== thisChart) {
+  //         if (chart.xAxis[0].setExtremes) {
+  //           // It is null while updating
+  //           chart.xAxis[0].setExtremes(e.min, e.max, undefined, false, {
+  //             trigger: "syncExtremes",
+  //           });
+  //         }
+  //       }
+  //     });
+  //   }
+  // }
+
   Highcharts.setOptions({
     lang: {
       numericSymbols: ["K", "M", "B", "T", "P", "E"],
@@ -135,97 +309,7 @@ async function main() {
       timezoneOffset: 7 * 60, // Pacific time zone
     },
   });
-  Highcharts.chart("hpChart", {
-    chart: {
-      style: {
-        fontFamily: "Fira Sans",
-      },
-      zoomType: "x",
-      height: 500,
-    },
-    title: {
-      text: "GUDAGUDA 2 rerun points",
-      style: {
-        fontSize: "1.5em",
-      },
-    },
-    xAxis: {
-      title: {
-        text: "Pacific Time",
-        style: {
-          fontSize: "1.25em",
-        },
-      },
-      type: "datetime",
-      gridLineWidth: 1,
-      crosshair: {
-        // width: 2,
-        // color: "gray",
-        dashStyle: "Dash",
-      },
-      labels: {
-        style: {
-          fontSize: "1.15em",
-        },
-      },
-    },
-    yAxis: {
-      title: {
-        text: "Points",
-        style: {
-          fontSize: "1.25em",
-        },
-      },
-      labels: {
-        style: {
-          fontSize: "1.15em",
-        },
-      },
-    },
-    tooltip: {
-      shadow: false,
-      animation: false,
-      shared: true,
-      style: {
-        fontSize: "1.15em",
-      },
-      // positioner: function () {
-      //   return { x: 80, y: 50 };
-      // },
-    },
-    legend: {
-      enabled: true,
-    },
-    credits: {
-      enabled: false,
-    },
-    plotOptions: {
-      line: {
-        marker: {
-          radius: 4,
-        },
-        lineWidth: 2,
-        states: {
-          hover: false,
-        },
-        threshold: null,
-      },
-    },
-    series: [
-      {
-        type: "line",
-        name: "Oda Bakufu",
-        data: outArray,
-        color: "#5FAAD4",
-      },
-      {
-        type: "line",
-        name: "Shinshengumi",
-        data: outArray2,
-        color: "#A22A2A",
-      },
-    ],
-  });
+  Highcharts.chart("hpChart", genOpts(outArray, outArray2));
 
   let outdpsArray = highChartsArray(
     rate(odaArray, timeArray),
@@ -235,96 +319,6 @@ async function main() {
     rate(shinshengumiArray, timeArray),
     timeArray.slice(1)
   );
-  Highcharts.chart("dpsChart", {
-    chart: {
-      style: {
-        fontFamily: "Fira Sans",
-      },
-      zoomType: "x",
-      height: 500,
-    },
-    title: {
-      text: "GUDAGUDA 2 rerun points",
-      style: {
-        fontSize: "1.5em",
-      },
-    },
-    xAxis: {
-      title: {
-        text: "Pacific Time",
-        style: {
-          fontSize: "1.25em",
-        },
-      },
-      type: "datetime",
-      gridLineWidth: 1,
-      crosshair: {
-        // width: 2,
-        // color: "gray",
-        dashStyle: "Dash",
-      },
-      labels: {
-        style: {
-          fontSize: "1.15em",
-        },
-      },
-    },
-    yAxis: {
-      title: {
-        text: "Points",
-        style: {
-          fontSize: "1.25em",
-        },
-      },
-      labels: {
-        style: {
-          fontSize: "1.15em",
-        },
-      },
-    },
-    tooltip: {
-      shadow: false,
-      animation: false,
-      shared: true,
-      style: {
-        fontSize: "1.15em",
-      },
-      // positioner: function () {
-      //   return { x: 80, y: 50 };
-      // },
-    },
-    legend: {
-      enabled: true,
-    },
-    credits: {
-      enabled: false,
-    },
-    plotOptions: {
-      line: {
-        marker: {
-          radius: 4,
-        },
-        lineWidth: 2,
-        states: {
-          hover: false,
-        },
-        threshold: null,
-      },
-    },
-    series: [
-      {
-        type: "line",
-        name: "Oda Bakufu",
-        data: outdpsArray,
-        color: "#5FAAD4",
-      },
-      {
-        type: "line",
-        name: "Shinshengumi",
-        data: outdpsArray2,
-        color: "#A22A2A",
-      },
-    ],
-  });
+  Highcharts.chart("dpsChart", genOpts(outdpsArray, outdpsArray2));
 }
 main();
