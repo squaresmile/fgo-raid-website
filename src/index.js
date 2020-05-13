@@ -4,7 +4,7 @@ import * as Highcharts from "highcharts";
 import Accessibility from "highcharts/modules/accessibility";
 import Exporting from "highcharts/modules/exporting";
 import ExportData from "highcharts/modules/export-data";
-import Boost from "highcharts/modules/boost";
+// import Boost from "highcharts/modules/boost";
 
 function createPText(string) {
   let newPElement = document.createElement("p");
@@ -73,7 +73,7 @@ function bossesListString(bosses, prefix = "") {
   return bossesString;
 }
 
-function genOpts(data1, data2) {
+function genOpts(data1, data2, syncExtremes) {
   return {
     chart: {
       style: {
@@ -107,9 +107,9 @@ function genOpts(data1, data2) {
           fontSize: "1.15em",
         },
       },
-      // events: {
-      //   setExtremes: syncExtremes,
-      // },
+      events: {
+        setExtremes: syncExtremes,
+      },
     },
     yAxis: {
       title: {
@@ -132,7 +132,7 @@ function genOpts(data1, data2) {
         fontSize: "1.15em",
       },
       positioner: function () {
-        return { x: 70, y: 50 };
+        return { x: 80, y: 50 };
       },
     },
     legend: {
@@ -159,13 +159,13 @@ function genOpts(data1, data2) {
         type: "line",
         name: "Oda Bakufu",
         data: data1,
-        color: "#5FAAD4",
+        color: "#A22A2A",
       },
       {
         type: "line",
         name: "Shinshengumi",
         data: data2,
-        color: "#A22A2A",
+        color: "#5FAAD4",
       },
     ],
   };
@@ -232,74 +232,72 @@ async function main() {
   Accessibility(Highcharts);
   Exporting(Highcharts);
   ExportData(Highcharts);
-  Boost(Highcharts);
+  // Boost(Highcharts);
 
   /**
-   * Too slow at the moment
    * In order to synchronize tooltips and crosshairs, override the
    * built-in events with handlers defined on the parent element.
    */
-  // ["mousemove", "touchmove", "touchstart"].forEach(function (eventType) {
-  //   document.getElementById("charts").addEventListener(eventType, function (e) {
-  //     for (let i = 0; i < Highcharts.charts.length; i++) {
-  //       let chart = Highcharts.charts[i];
-  //       let event = chart.pointer.normalize(e); // Find coordinates within the chart
-  //       let point;
-  //       for (let j = 0; j < chart.series.length && !point; j++) {
-  //         point = chart.series[j].searchPoint(event, true);
-  //       }
-  //       if (point) {
-  //         if (e.type === "mousemove") {
-  //           point.onMouseOver();
-  //           chart.xAxis[0].drawCrosshair(event, point);
-  //         } else {
-  //           point.onMouseOut();
-  //           chart.tooltip.hide(point);
-  //           chart.xAxis[0].hideCrosshair();
-  //         }
-  //       }
-  //     }
-  //   });
-  // });
+  ["mousemove", "touchmove", "touchstart"].forEach(function (eventType) {
+    document.getElementById("charts").addEventListener(eventType, function (e) {
+      for (let i = 0; i < Highcharts.charts.length; i++) {
+        let chart = Highcharts.charts[i];
+        let event = chart.pointer.normalize(e); // Find coordinates within the chart
+        let point;
+        for (let j = 0; j < chart.series.length && !point; j++) {
+          point = chart.series[j].searchPoint(event, true);
+        }
+        if (point) {
+          if (e.type === "mousemove") {
+            point.onMouseOver();
+            chart.xAxis[0].drawCrosshair(event, point);
+          } else {
+            point.onMouseOut();
+            chart.tooltip.hide(point);
+            chart.xAxis[0].hideCrosshair();
+          }
+        }
+      }
+    });
+  });
 
   /**
    * Override the reset function, we don't need to hide the tooltips and
    * crosshairs.
    */
-  // Highcharts.Pointer.prototype.reset = function () {
-  //   return undefined;
-  // };
+  Highcharts.Pointer.prototype.reset = function () {
+    return undefined;
+  };
 
   /**
    * Highlight a point by showing tooltip, setting hover state and draw crosshair
    */
-  // Highcharts.Point.prototype.highlight = function (event) {
-  //   event = this.series.chart.pointer.normalize(event);
-  //   this.onMouseOver(); // Show the hover marker
-  //   this.series.chart.tooltip.refresh([this]); // Show the tooltip
-  //   this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
-  // };
+  Highcharts.Point.prototype.highlight = function (event) {
+    event = this.series.chart.pointer.normalize(event);
+    this.onMouseOver(); // Show the hover marker
+    this.series.chart.tooltip.refresh([this]); // Show the tooltip
+    this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
+  };
 
   /**
    * Synchronize zooming through the setExtremes event handler.
    */
-  // function syncExtremes(e) {
-  //   var thisChart = this.chart;
-
-  //   if (e.trigger !== "syncExtremes") {
-  //     // Prevent feedback loop
-  //     Highcharts.each(Highcharts.charts, function (chart) {
-  //       if (chart !== thisChart) {
-  //         if (chart.xAxis[0].setExtremes) {
-  //           // It is null while updating
-  //           chart.xAxis[0].setExtremes(e.min, e.max, undefined, false, {
-  //             trigger: "syncExtremes",
-  //           });
-  //         }
-  //       }
-  //     });
-  //   }
-  // }
+  function syncExtremes(e) {
+    var thisChart = this.chart;
+    if (e.trigger !== "syncExtremes") {
+      // Prevent feedback loop
+      Highcharts.each(Highcharts.charts, function (chart) {
+        if (chart !== thisChart) {
+          if (chart.xAxis[0].setExtremes) {
+            // It is null while updating
+            chart.xAxis[0].setExtremes(e.min, e.max, undefined, false, {
+              trigger: "syncExtremes",
+            });
+          }
+        }
+      });
+    }
+  }
 
   Highcharts.setOptions({
     lang: {
@@ -309,7 +307,7 @@ async function main() {
       timezoneOffset: 7 * 60, // Pacific time zone
     },
   });
-  Highcharts.chart("hpChart", genOpts(outArray, outArray2));
+  Highcharts.chart("hpChart", genOpts(outArray, outArray2, syncExtremes));
 
   let outdpsArray = highChartsArray(
     rate(odaArray, timeArray),
@@ -319,6 +317,9 @@ async function main() {
     rate(shinshengumiArray, timeArray),
     timeArray.slice(1)
   );
-  Highcharts.chart("dpsChart", genOpts(outdpsArray, outdpsArray2));
+  Highcharts.chart(
+    "dpsChart",
+    genOpts(outdpsArray, outdpsArray2, syncExtremes)
+  );
 }
 main();
