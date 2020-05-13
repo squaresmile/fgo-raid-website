@@ -80,7 +80,6 @@ function genOpts(data1, data2, syncExtremes) {
         fontFamily: "Fira Sans",
       },
       zoomType: "x",
-      height: 500,
     },
     title: {
       text: "GUDAGUDA 2 rerun points",
@@ -132,7 +131,7 @@ function genOpts(data1, data2, syncExtremes) {
         fontSize: "1.15em",
       },
       positioner: function () {
-        return { x: 80, y: 50 };
+        return { x: 100, y: 50 };
       },
     },
     legend: {
@@ -140,6 +139,10 @@ function genOpts(data1, data2, syncExtremes) {
     },
     credits: {
       enabled: false,
+    },
+    exporting: {
+      sourceWidth: 1000,
+      sourceHeight: 500,
     },
     plotOptions: {
       line: {
@@ -238,7 +241,9 @@ async function main() {
    * In order to synchronize tooltips and crosshairs, override the
    * built-in events with handlers defined on the parent element.
    */
-  ["mousemove", "touchmove", "touchstart"].forEach(function (eventType) {
+  ["mousemove", "mouseleave", "touchstart", "touchmove"].forEach(function (
+    eventType
+  ) {
     document.getElementById("charts").addEventListener(eventType, function (e) {
       for (let i = 0; i < Highcharts.charts.length; i++) {
         let chart = Highcharts.charts[i];
@@ -248,7 +253,7 @@ async function main() {
           point = chart.series[j].searchPoint(event, true);
         }
         if (point) {
-          if (e.type === "mousemove") {
+          if (["mousemove", "touchmove", "touchstart"].includes(e.type)) {
             point.onMouseOver();
             chart.xAxis[0].drawCrosshair(event, point);
           } else {
