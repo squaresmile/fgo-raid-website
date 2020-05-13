@@ -1,9 +1,12 @@
 var path = require("path");
 
 module.exports = {
-  entry: "./src/index.ts",
+  entry: "./src/index.js",
   output: {
     filename: "./main.js",
+  },
+  performance: {
+    hints: false,
   },
   devtool: "source-map",
   resolve: {
