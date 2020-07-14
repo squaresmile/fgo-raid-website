@@ -4,7 +4,17 @@ import * as Highcharts from "highcharts";
 import Accessibility from "highcharts/modules/accessibility";
 import Exporting from "highcharts/modules/exporting";
 import ExportData from "highcharts/modules/export-data";
+import { nth, takeRight } from "lodash-es";
 // import Boost from "highcharts/modules/boost";
+
+const BOSS_COLOR = {
+  Fran: "#55A868",
+  Helena: "#64B5CD",
+  Nito: "#4C72B0",
+  Nobu: "#C44E52",
+  Raikou: "#8172B2",
+  Sabers: "#CCB974",
+};
 
 function createPText(string) {
   let newPElement = document.createElement("p");
@@ -12,7 +22,7 @@ function createPText(string) {
   return newPElement;
 }
 
-function highChartsArray(dataArray, timeArray) {
+function createHighChartsArray(dataArray, timeArray) {
   let outArray = [];
   for (let i = 0; i < dataArray.length; i++) {
     outArray.push([timeArray[i] * 1000, dataArray[i]]);
@@ -23,21 +33,37 @@ function highChartsArray(dataArray, timeArray) {
 function diffArray(origArray) {
   let startArray = origArray.slice(0, -1);
   let endArray = origArray.slice(1);
-  let result = [];
+  let outArray = [];
   for (let i = 0; i < startArray.length; i++) {
-    result.push(endArray[i] - startArray[i]);
+    outArray.push(endArray[i] - startArray[i]);
   }
-  return result;
+  return outArray;
 }
 
-function rate(dataArray, timeArray) {
+function rate(dataArray, timeArray, ascending) {
   let dataDiff = diffArray(dataArray);
-  let timeDiff = diffArray(timeArray);
-  let result = [];
-  for (let i = 0; i < dataDiff.length; i++) {
-    result.push(Math.round(dataDiff[i] / timeDiff[i]));
+  if (ascending === false) {
+    dataDiff = dataDiff.map((x) => -x);
   }
-  return result;
+  let timeDiff = diffArray(timeArray);
+  let outArray = [];
+  for (let i = 0; i < dataDiff.length; i++) {
+    outArray.push(dataDiff[i] / timeDiff[i]);
+  }
+  return outArray;
+}
+
+function calcETA(dataArray, timeArray, target, n) {
+  let slicedData = takeRight(dataArray, n);
+  let slicedTime = takeRight(timeArray, n);
+  let avgRate =
+    (nth(slicedData, -1) - nth(slicedData, 0)) /
+    (nth(slicedTime, -1) - nth(slicedTime, 0));
+  if (avgRate === 0) {
+    avgRate = Math.sign(nth(slicedData, -1) - nth(slicedData, 0));
+  }
+  let timeRemaining = (target - nth(slicedData, -1)) / avgRate;
+  return nth(slicedTime, -1) + timeRemaining;
 }
 
 function futureStrings(timestamp, strict) {
@@ -57,23 +83,32 @@ function futureStrings(timestamp, strict) {
   return [futureString, difference];
 }
 
-function calcAPGain(timestamp) {
-  let APGain = (timestamp * 1000 - Date.now()) / 1000 / 60 / 5;
-  let boundedAPGain = Math.max(Math.floor(APGain), 0);
-  let APText = `${boundedAPGain} AP will regen until the next raids.`;
-  return createPText(APText);
-}
+// function calcAPGain(timestamp) {
+//   let APGain = (timestamp * 1000 - Date.now()) / 1000 / 60 / 5;
+//   let boundedAPGain = Math.max(Math.floor(APGain), 0);
+//   let APText = `${boundedAPGain} AP will regen until the next raids.`;
+//   return createPText(APText);
+// }
 
-function bossesListString(bosses, prefix = "") {
-  let bossesString = prefix;
-  if (bosses.length > 1) {
-    bossesString += bosses.slice(0, -1).join(", ") + " and ";
+// function bossesListString(bosses, prefix = "") {
+//   let bossesString = prefix;
+//   if (bosses.length > 1) {
+//     bossesString += bosses.slice(0, -1).join(", ") + " and ";
+//   }
+//   bossesString += bosses.slice(-1);
+//   return bossesString;
+// }
+
+function genOpts(data, config) {
+  let series = [];
+  for (const boss in data) {
+    series.push({
+      type: "line",
+      name: boss,
+      data: data[boss],
+      color: BOSS_COLOR[boss],
+    });
   }
-  bossesString += bosses.slice(-1);
-  return bossesString;
-}
-
-function genOpts(data1, data2, syncExtremes) {
   return {
     chart: {
       style: {
@@ -82,7 +117,7 @@ function genOpts(data1, data2, syncExtremes) {
       zoomType: "x",
     },
     title: {
-      text: "GUDAGUDA 2 rerun points",
+      text: config.title,
       style: {
         fontSize: "1.5em",
       },
@@ -107,12 +142,12 @@ function genOpts(data1, data2, syncExtremes) {
         },
       },
       events: {
-        setExtremes: syncExtremes,
+        setExtremes: config.syncExtremes,
       },
     },
     yAxis: {
       title: {
-        text: "Points",
+        text: config.yAxisTitle,
         style: {
           fontSize: "1.25em",
         },
@@ -127,6 +162,7 @@ function genOpts(data1, data2, syncExtremes) {
       shadow: false,
       animation: false,
       shared: true,
+      valueDecimals: config.valueDecimals,
       style: {
         fontSize: "1.15em",
       },
@@ -147,9 +183,9 @@ function genOpts(data1, data2, syncExtremes) {
     plotOptions: {
       line: {
         marker: {
-          radius: 4,
+          radius: 2,
         },
-        lineWidth: 2,
+        lineWidth: 1,
         states: {
           hover: false,
         },
@@ -157,80 +193,30 @@ function genOpts(data1, data2, syncExtremes) {
         boostThreshold: 1,
       },
     },
-    series: [
-      {
-        type: "line",
-        name: "Oda Bakufu",
-        data: data1,
-        color: "#A22A2A",
-      },
-      {
-        type: "line",
-        name: "Shinshengumi",
-        data: data2,
-        color: "#5FAAD4",
-      },
-    ],
+    series: series,
   };
 }
 
 async function main() {
-  const etaData = await fetch("data/eta.json").then((response) =>
-    response.json()
-  );
+  const raidData = await fetch("data.json").then((response) => response.json());
+  let timeArray = raidData["Time"];
+  delete raidData["Time"];
+
   const etaTextDiv = document.getElementById("etaText");
-  if (etaData.eta.length === 0) {
-    let noRaid = `No ongoing raid at the moment.`;
-    etaTextDiv.appendChild(createPText(noRaid));
-    if (etaData.nextRaid.startTime === 0) {
-      const raidSchedule = [
-        1587715200,
-        1587772800,
-        1587859200,
-        1587945600,
-        1588118400,
-      ];
-      let upcomingRaids = raidSchedule.filter(
-        (timestamp) => timestamp * 1000 > Date.now()
-      );
-      if (upcomingRaids.length > 0) {
-        let nextRaid = Math.min(...upcomingRaids);
-        let [dateString, difference] = futureStrings(nextRaid, false);
-        let etaText = `Upcoming raids ${difference} (${dateString}).`;
-        etaTextDiv.appendChild(createPText(etaText));
-        etaTextDiv.appendChild(calcAPGain(nextRaid));
-      }
-    } else {
-      let [dateString, difference] = futureStrings(
-        etaData.nextRaid.startTime,
-        false
-      );
-      let bossesString = bossesListString(etaData.nextRaid.bosses);
-      let etaText = `Upcoming ${bossesString} raids ${difference} (${dateString}).`;
-      etaTextDiv.appendChild(createPText(etaText));
-      etaTextDiv.appendChild(calcAPGain(etaData.nextRaid.startTime));
-    }
-  } else {
-    for (const eta of etaData.eta) {
-      let [dateString, difference] = futureStrings(eta.ETA, true);
-      let etaText = `${eta["Boss"]}: ${difference} (${dateString})`;
-      etaTextDiv.appendChild(createPText(etaText));
-    }
-    let upcomingBosses = etaData.raidsInLine;
-    if (upcomingBosses.length !== 0) {
-      let bossesString = bossesListString(upcomingBosses);
-      let nextBosses = `${bossesString} in line to start.`;
-      etaTextDiv.appendChild(createPText(nextBosses));
+  let etaResult = [];
+  for (const boss in raidData) {
+    if (nth(raidData[boss], -1) !== 0) {
+      let eta = calcETA(raidData[boss], timeArray, 0, 20);
+      etaResult.push([boss, eta]);
     }
   }
 
-  const raidData = await fetch("data.json").then((response) => response.json());
-  let phase4data = raidData[1]["data"];
-  let timeArray = phase4data[0];
-  let odaArray = phase4data[1];
-  let shinshengumiArray = phase4data[2];
-  let outArray = highChartsArray(odaArray, timeArray);
-  let outArray2 = highChartsArray(shinshengumiArray, timeArray);
+  etaResult = etaResult.sort((a, b) => a[1] - b[1]);
+  for (const [boss, eta] of etaResult) {
+    let [dateString, difference] = futureStrings(eta, true);
+    let etaText = `${boss}: ${difference} (${dateString})`;
+    etaTextDiv.appendChild(createPText(etaText));
+  }
 
   Accessibility(Highcharts);
   Exporting(Highcharts);
@@ -312,19 +298,38 @@ async function main() {
       timezoneOffset: 7 * 60, // Pacific time zone
     },
   });
-  Highcharts.chart("hpChart", genOpts(outArray, outArray2, syncExtremes));
 
-  let outdpsArray = highChartsArray(
-    rate(odaArray, timeArray),
-    timeArray.slice(1)
+  let hpData = {};
+  for (const boss in raidData) {
+    hpData[boss] = createHighChartsArray(raidData[boss], timeArray);
+  }
+
+  Highcharts.chart(
+    "hpChart",
+    genOpts(hpData, {
+      title: "NA Summer Race Rerun Distance",
+      yAxisTitle: "Distance (m)",
+      valueDecimals: 0,
+      syncExtremes: syncExtremes,
+    })
   );
-  let outdpsArray2 = highChartsArray(
-    rate(shinshengumiArray, timeArray),
-    timeArray.slice(1)
-  );
+
+  let dpsData = {};
+  for (const boss in raidData) {
+    dpsData[boss] = createHighChartsArray(
+      rate(raidData[boss], timeArray, false),
+      timeArray.slice(1)
+    );
+  }
+
   Highcharts.chart(
     "dpsChart",
-    genOpts(outdpsArray, outdpsArray2, syncExtremes)
+    genOpts(dpsData, {
+      title: "NA Summer Race Rerun Speed",
+      yAxisTitle: "Speed (m/s)",
+      valueDecimals: 2,
+      syncExtremes: syncExtremes,
+    })
   );
 }
 main();
