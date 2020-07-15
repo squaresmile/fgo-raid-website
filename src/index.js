@@ -122,7 +122,7 @@ function genOpts(data, config) {
     title: {
       text: config.title,
       style: {
-        fontSize: "1.5em",
+        fontSize: "1.75em",
       },
     },
     xAxis: {
@@ -175,6 +175,9 @@ function genOpts(data, config) {
     },
     legend: {
       enabled: true,
+      itemStyle: {
+        fontSize: "1.15em",
+      },
     },
     credits: {
       enabled: false,
