@@ -115,6 +115,7 @@ function genOpts(data, config) {
         fontFamily: "Fira Sans",
       },
       zoomType: "x",
+      marginLeft: 70,
     },
     title: {
       text: config.title,
@@ -301,7 +302,10 @@ async function main() {
 
   let hpData = {};
   for (const boss in raidData) {
-    hpData[boss] = createHighChartsArray(raidData[boss], timeArray);
+    hpData[boss] = createHighChartsArray(
+      raidData[boss].slice(1),
+      timeArray.slice(1)
+    );
   }
 
   Highcharts.chart(
