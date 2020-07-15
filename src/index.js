@@ -56,14 +56,16 @@ function rate(dataArray, timeArray, ascending) {
 function calcETA(dataArray, timeArray, target, n) {
   let slicedData = takeRight(dataArray, n);
   let slicedTime = takeRight(timeArray, n);
-  let avgRate =
-    (nth(slicedData, -1) - nth(slicedData, 0)) /
-    (nth(slicedTime, -1) - nth(slicedTime, 0));
+  let lastData = nth(slicedData, -1);
+  let lastTime = nth(slicedTime, -1);
+  let dataDiff = lastData - nth(slicedData, 0);
+  let timeDiff = lastTime - nth(slicedTime, 0);
+  let avgRate = dataDiff / timeDiff;
   if (avgRate === 0) {
-    avgRate = Math.sign(nth(slicedData, -1) - nth(slicedData, 0));
+    avgRate = Math.sign(dataDiff);
   }
-  let timeRemaining = (target - nth(slicedData, -1)) / avgRate;
-  return nth(slicedTime, -1) + timeRemaining;
+  let timeRemaining = (target - lastData) / avgRate;
+  return lastTime + timeRemaining;
 }
 
 function futureStrings(timestamp, strict) {
@@ -184,9 +186,9 @@ function genOpts(data, config) {
     plotOptions: {
       line: {
         marker: {
-          radius: 2,
+          enabled: false,
         },
-        lineWidth: 1,
+        lineWidth: 2,
         states: {
           hover: false,
         },
@@ -203,7 +205,6 @@ async function main() {
   let timeArray = raidData["Time"];
   delete raidData["Time"];
 
-  const etaTextDiv = document.getElementById("etaText");
   let etaResult = [];
   for (const boss in raidData) {
     if (nth(raidData[boss], -1) !== 0) {
@@ -212,6 +213,7 @@ async function main() {
     }
   }
 
+  const etaTextDiv = document.getElementById("etaText");
   etaResult = etaResult.sort((a, b) => a[1] - b[1]);
   for (const [boss, eta] of etaResult) {
     let [dateString, difference] = futureStrings(eta, true);
