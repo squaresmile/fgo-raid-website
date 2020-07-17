@@ -205,8 +205,8 @@ function genOpts(data, config) {
 
 async function main() {
   const raidData = await fetch("data.json").then((response) => response.json());
-  let timeArray = raidData["Time"];
-  delete raidData["Time"];
+  let timeArray = raidData["timestamp"];
+  delete raidData["timestamp"];
 
   let etaResult = [];
   for (const boss in raidData) {
@@ -305,10 +305,15 @@ async function main() {
     },
   });
 
-  let hpData = {};
+  let scaledHpData = {};
   for (const boss in raidData) {
+    scaledHpData[boss] = raidData[boss].map((x) => (55000000 - x) / 55);
+  }
+
+  let hpData = {};
+  for (const boss in scaledHpData) {
     hpData[boss] = createHighChartsArray(
-      raidData[boss].slice(1),
+      scaledHpData[boss].slice(1),
       timeArray.slice(1)
     );
   }
@@ -324,9 +329,9 @@ async function main() {
   );
 
   let dpsData = {};
-  for (const boss in raidData) {
+  for (const boss in scaledHpData) {
     dpsData[boss] = createHighChartsArray(
-      rate(raidData[boss], timeArray, false),
+      rate(scaledHpData[boss], timeArray, false),
       timeArray.slice(1)
     );
   }
