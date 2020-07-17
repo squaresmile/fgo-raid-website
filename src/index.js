@@ -5,7 +5,7 @@ import Accessibility from "highcharts/modules/accessibility";
 import Exporting from "highcharts/modules/exporting";
 import ExportData from "highcharts/modules/export-data";
 import { nth, takeRight } from "lodash-es";
-// import Boost from "highcharts/modules/boost";
+import Boost from "highcharts/modules/boost";
 
 const BOSS_COLOR = {
   Fran: "#55A868",
@@ -211,7 +211,7 @@ async function main() {
   let etaResult = [];
   for (const boss in raidData) {
     if (nth(raidData[boss], -1) !== 0) {
-      let eta = calcETA(raidData[boss], timeArray, 0, 20);
+      let eta = calcETA(raidData[boss], timeArray, 0, 100);
       etaResult.push([boss, eta]);
     }
   }
@@ -227,7 +227,7 @@ async function main() {
   Accessibility(Highcharts);
   Exporting(Highcharts);
   ExportData(Highcharts);
-  // Boost(Highcharts);
+  Boost(Highcharts);
 
   /**
    * In order to synchronize tooltips and crosshairs, override the
