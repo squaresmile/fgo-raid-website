@@ -204,14 +204,16 @@ function genOpts(data, config) {
 }
 
 async function main() {
-  const raidData = await fetch("data.json").then((response) => response.json());
+  const data = await fetch("data.json").then((response) => response.json());
+  let raidData = data["data"];
+  let targetData = data["target"];
   let timeArray = raidData["timestamp"];
   delete raidData["timestamp"];
 
   let etaResult = [];
   for (const boss in raidData) {
     if (nth(raidData[boss], -1) !== 0) {
-      let eta = calcETA(raidData[boss], timeArray, 0, 100);
+      let eta = calcETA(raidData[boss], timeArray, targetData[boss], 100);
       etaResult.push([boss, eta]);
     }
   }
@@ -307,7 +309,9 @@ async function main() {
 
   let scaledHpData = {};
   for (const boss in raidData) {
-    scaledHpData[boss] = raidData[boss].map((x) => (55000000 - x) / 55);
+    scaledHpData[boss] = raidData[boss].map(
+      (x) => (targetData[boss] - x) / data["scale"][boss]
+    );
   }
 
   let hpData = {};
