@@ -284,7 +284,7 @@ async function main() {
     var thisChart = this.chart;
     if (e.trigger !== "syncExtremes") {
       // Prevent feedback loop
-      Highcharts.each(Highcharts.charts, function (chart) {
+      Highcharts.charts.forEach(function (chart) {
         if (chart !== thisChart) {
           if (chart.xAxis[0].setExtremes) {
             // It is null while updating
