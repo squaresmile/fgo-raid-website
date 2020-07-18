@@ -159,6 +159,7 @@ function genOpts(data, config) {
           fontSize: "1.15em",
         },
       },
+      min: config.yAxisMin,
     },
     tooltip: {
       shadow: false,
@@ -326,6 +327,7 @@ async function main() {
     genOpts(hpData, {
       title: "NA Summer Race Rerun Distance",
       yAxisTitle: "Distance (m)",
+      yAxisMin: 0,
       valueDecimals: 0,
       syncExtremes: syncExtremes,
     })
