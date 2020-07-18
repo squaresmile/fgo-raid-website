@@ -4,7 +4,7 @@ import * as Highcharts from "highcharts";
 import Accessibility from "highcharts/modules/accessibility";
 import Exporting from "highcharts/modules/exporting";
 import ExportData from "highcharts/modules/export-data";
-import { nth, takeRight } from "lodash-es";
+import { nth } from "lodash-es";
 import Boost from "highcharts/modules/boost";
 
 const BOSS_COLOR = {
@@ -54,12 +54,11 @@ function rate(dataArray, timeArray, ascending) {
 }
 
 function calcETA(dataArray, timeArray, target, n) {
-  let slicedData = takeRight(dataArray, n);
-  let slicedTime = takeRight(timeArray, n);
-  let lastData = nth(slicedData, -1);
-  let lastTime = nth(slicedTime, -1);
-  let dataDiff = lastData - nth(slicedData, 0);
-  let timeDiff = lastTime - nth(slicedTime, 0);
+  n = Math.min(n, dataArray.length);
+  let lastData = nth(dataArray, -1);
+  let lastTime = nth(timeArray, -1);
+  let dataDiff = lastData - nth(dataArray, -n);
+  let timeDiff = lastTime - nth(timeArray, -n);
   let avgRate = dataDiff / timeDiff;
   if (avgRate === 0) {
     avgRate = Math.sign(dataDiff);
@@ -117,7 +116,7 @@ function genOpts(data, config) {
         fontFamily: "Fira Sans",
       },
       zoomType: "x",
-      marginLeft: 70,
+      marginLeft: 80,
     },
     title: {
       text: config.title,
@@ -191,7 +190,7 @@ function genOpts(data, config) {
         marker: {
           enabled: false,
         },
-        lineWidth: 2,
+        lineWidth: 1,
         states: {
           hover: false,
         },
@@ -212,7 +211,7 @@ async function main() {
 
   let etaResult = [];
   for (const boss in raidData) {
-    if (nth(raidData[boss], -1) !== 0) {
+    if (nth(raidData[boss], -1) <= targetData[boss]) {
       let eta = calcETA(raidData[boss], timeArray, targetData[boss], 100);
       etaResult.push([boss, eta]);
     }
