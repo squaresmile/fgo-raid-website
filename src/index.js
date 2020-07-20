@@ -48,7 +48,9 @@ function rate(dataArray, timeArray, ascending) {
   let timeDiff = diffArray(timeArray);
   let outArray = [];
   for (let i = 0; i < dataDiff.length; i++) {
-    outArray.push(dataDiff[i] / timeDiff[i]);
+    if (dataDiff[i] > 0) {
+      outArray.push(dataDiff[i] / timeDiff[i]);
+    }
   }
   return outArray;
 }
@@ -160,6 +162,7 @@ function genOpts(data, config) {
         },
       },
       min: config.yAxisMin,
+      max: config.yAxisMax,
     },
     tooltip: {
       shadow: false,
@@ -211,19 +214,23 @@ async function main() {
   delete raidData["timestamp"];
 
   let etaResult = [];
-  for (const boss in raidData) {
+  let bossNames = Object.keys(raidData);
+  for (let i = 0; i < bossNames.length; i++) {
+    let boss = bossNames[i];
     if (nth(raidData[boss], -1) <= targetData[boss]) {
       let eta = calcETA(raidData[boss], timeArray, targetData[boss], 100);
-      etaResult.push([boss, eta]);
+      etaResult.push([boss, eta, i]);
     }
   }
 
   const etaTextDiv = document.getElementById("etaText");
   etaResult = etaResult.sort((a, b) => a[1] - b[1]);
-  for (const [boss, eta] of etaResult) {
-    let [dateString, difference] = futureStrings(eta, true);
-    let etaText = `${boss}: ${difference} (${dateString})`;
-    etaTextDiv.appendChild(createPText(etaText));
+  if (etaResult.length > 3) {
+    for (const [boss, eta] of etaResult) {
+      let [dateString, difference] = futureStrings(eta, true);
+      let etaText = `${boss}: ${difference} (${dateString})`;
+      etaTextDiv.appendChild(createPText(etaText));
+    }
   }
 
   Accessibility(Highcharts);
@@ -235,6 +242,7 @@ async function main() {
    * In order to synchronize tooltips and crosshairs, override the
    * built-in events with handlers defined on the parent element.
    */
+  let stillGoingBoss = Math.max(...etaResult.map((x) => x[2]));
   ["mousemove", "mouseleave", "touchstart", "touchmove"].forEach(function (
     eventType
   ) {
@@ -243,7 +251,7 @@ async function main() {
         let chart = Highcharts.charts[i];
         let event = chart.pointer.normalize(e); // Find coordinates within the chart
         let point;
-        for (let j = 0; j < chart.series.length && !point; j++) {
+        for (let j = stillGoingBoss; j < chart.series.length && !point; j++) {
           point = chart.series[j].searchPoint(event, true);
         }
         if (point) {
@@ -309,8 +317,8 @@ async function main() {
 
   let scaledHpData = {};
   for (const boss in raidData) {
-    scaledHpData[boss] = raidData[boss].map(
-      (x) => (targetData[boss] - x) / data["scale"][boss]
+    scaledHpData[boss] = raidData[boss].map((x) =>
+      Math.max((targetData[boss] - x) / data["scale"][boss], 0)
     );
   }
 
@@ -327,7 +335,8 @@ async function main() {
     genOpts(hpData, {
       title: "NA Summer Race Rerun Distance",
       yAxisTitle: "Distance (m)",
-      yAxisMin: 0,
+      yAxisMin: etaResult.length < 6 ? 0 : null,
+      yAxisMax: 1000000,
       valueDecimals: 0,
       syncExtremes: syncExtremes,
     })
