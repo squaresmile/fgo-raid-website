@@ -40,11 +40,9 @@ function diffArray(origArray) {
   return outArray;
 }
 
-function rate(dataArray, timeArray, ascending) {
+function rate(dataArray, timeArray, scale) {
   let dataDiff = diffArray(dataArray);
-  if (ascending === false) {
-    dataDiff = dataDiff.map((x) => -x);
-  }
+  dataDiff = dataDiff.map((x) => x * scale);
   let timeDiff = diffArray(timeArray);
   let outArray = [];
   for (let i = 0; i < dataDiff.length; i++) {
@@ -336,16 +334,21 @@ async function main() {
       title: "NA Summer Race Rerun Distance",
       yAxisTitle: "Distance (m)",
       yAxisMin: etaResult.length < 6 ? 0 : null,
-      yAxisMax: 1000000,
+      yAxisMax: 1000,
       valueDecimals: 0,
       syncExtremes: syncExtremes,
     })
   );
 
-  let dpsData = {};
+  let scaledHpDataForDps = {};
   for (const boss in scaledHpData) {
+    scaledHpDataForDps[boss] = scaledHpData[boss].filter((x) => x > 0);
+  }
+
+  let dpsData = {};
+  for (const boss in scaledHpDataForDps) {
     dpsData[boss] = createHighChartsArray(
-      rate(scaledHpData[boss], timeArray, false),
+      rate(scaledHpDataForDps[boss], timeArray, -3600),
       timeArray.slice(1)
     );
   }
@@ -354,7 +357,7 @@ async function main() {
     "dpsChart",
     genOpts(dpsData, {
       title: "NA Summer Race Rerun Speed",
-      yAxisTitle: "Speed (m/s)",
+      yAxisTitle: "Speed (m/h)",
       valueDecimals: 2,
       syncExtremes: syncExtremes,
     })
