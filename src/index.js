@@ -7,14 +7,14 @@ import ExportData from "highcharts/modules/export-data";
 import { nth } from "lodash-es";
 import Boost from "highcharts/modules/boost";
 
-const BOSS_COLOR = {
-  Fran: "#55A868",
-  Helena: "#64B5CD",
-  Nito: "#4C72B0",
-  Nobu: "#C44E52",
-  Raikou: "#8172B2",
-  Sabers: "#CCB974",
-};
+// const BOSS_COLOR = {
+//   Fran: "#55A868",
+//   Helena: "#64B5CD",
+//   Nito: "#4C72B0",
+//   Nobu: "#C44E52",
+//   Raikou: "#8172B2",
+//   Sabers: "#CCB974",
+// };
 
 function createPText(string) {
   let newPElement = document.createElement("p");
@@ -40,7 +40,7 @@ function diffArray(origArray) {
   return outArray;
 }
 
-function rate(dataArray, timeArray, scale) {
+function rate(dataArray, timeArray, scale = 1) {
   let dataDiff = diffArray(dataArray);
   dataDiff = dataDiff.map((x) => x * scale);
   let timeDiff = diffArray(timeArray);
@@ -107,7 +107,7 @@ function genOpts(data, config) {
       type: "line",
       name: boss,
       data: data[boss],
-      color: BOSS_COLOR[boss],
+      // color: BOSS_COLOR[boss],
     });
   }
   return {
@@ -126,7 +126,7 @@ function genOpts(data, config) {
     },
     xAxis: {
       title: {
-        text: "Pacific Time",
+        text: "Japan Standard Time",
         style: {
           fontSize: "1.25em",
         },
@@ -223,13 +223,13 @@ async function main() {
 
   const etaTextDiv = document.getElementById("etaText");
   etaResult = etaResult.sort((a, b) => a[1] - b[1]);
-  if (etaResult.length > 3) {
-    for (const [boss, eta] of etaResult) {
-      let [dateString, difference] = futureStrings(eta, true);
-      let etaText = `${boss}: ${difference} (${dateString})`;
-      etaTextDiv.appendChild(createPText(etaText));
-    }
+  // if (etaResult.length > 3) {
+  for (const [boss, eta] of etaResult) {
+    let [dateString, difference] = futureStrings(eta, true);
+    let etaText = `${boss}: ${difference} (${dateString})`;
+    etaTextDiv.appendChild(createPText(etaText));
   }
+  // }
 
   Accessibility(Highcharts);
   Exporting(Highcharts);
@@ -309,7 +309,7 @@ async function main() {
       numericSymbols: ["K", "M", "B", "T", "P", "E"],
     },
     time: {
-      timezoneOffset: 7 * 60, // Pacific time zone
+      timezoneOffset: -9 * 60, // Japan Standard Time
     },
   });
 
@@ -331,10 +331,10 @@ async function main() {
   Highcharts.chart(
     "hpChart",
     genOpts(hpData, {
-      title: "NA Summer Race Rerun Distance",
-      yAxisTitle: "Distance (m)",
-      yAxisMin: etaResult.length < 6 ? 0 : null,
-      yAxisMax: 1000,
+      title: "JP Guda 5 Raid",
+      yAxisTitle: "Count",
+      // yAxisMin: etaResult.length < 6 ? 0 : null,
+      // yAxisMax: 1000,
       valueDecimals: 0,
       syncExtremes: syncExtremes,
     })
@@ -348,7 +348,7 @@ async function main() {
   let dpsData = {};
   for (const boss in scaledHpDataForDps) {
     dpsData[boss] = createHighChartsArray(
-      rate(scaledHpDataForDps[boss], timeArray, -3600),
+      rate(scaledHpDataForDps[boss], timeArray),
       timeArray.slice(1)
     );
   }
@@ -356,8 +356,8 @@ async function main() {
   Highcharts.chart(
     "dpsChart",
     genOpts(dpsData, {
-      title: "NA Summer Race Rerun Speed",
-      yAxisTitle: "Speed (m/h)",
+      title: "JP Guda 5 Raid DPS",
+      yAxisTitle: "KPS (Kills per Second)",
       valueDecimals: 2,
       syncExtremes: syncExtremes,
     })

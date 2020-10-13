@@ -16,13 +16,13 @@
   "license": "ISC",
   "dependencies": {
     "date-fns": "^2.16.1",
-    "date-fns-tz": "^1.0.10",
+    "date-fns-tz": "^1.0.12",
     "highcharts": "^8.2.0",
     "lodash-es": "^4.17"
   },
   "devDependencies": {
     "prettier": "^2.1.2",
-    "source-map-loader": "^1.1.0",
+    "source-map-loader": "^1.1.1",
     "webpack": "^4.44.2",
     "webpack-cli": "^3.3.12",
     "webpack-dev-server": "^3.11.0"
