@@ -40,8 +40,11 @@ function diffArray(origArray) {
   return outArray;
 }
 
-function rate(dataArray, timeArray, scale = 1) {
+function rate(dataArray, timeArray, scale) {
   let dataDiff = diffArray(dataArray);
+  if (!scale) {
+    scale = Math.sign(dataDiff[0]);
+  }
   dataDiff = dataDiff.map((x) => x * scale);
   let timeDiff = diffArray(timeArray);
   let outArray = [];
