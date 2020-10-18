@@ -1,5 +1,6 @@
 import { formatDistanceToNowStrict, formatDistanceToNow } from "date-fns";
-import { format } from "date-fns-tz";
+import ja from "date-fns/locale/ja";
+import { format, utcToZonedTime } from "date-fns-tz";
 import * as Highcharts from "highcharts";
 import Accessibility from "highcharts/modules/accessibility";
 import Exporting from "highcharts/modules/exporting";
@@ -85,6 +86,19 @@ function futureStrings(timestamp, strict) {
     });
   }
   return [futureString, difference];
+}
+
+function getRuntimeText(start, end) {
+  let seconds = end - start;
+  let hours = Math.floor(seconds / 3600)
+    .toString()
+    .padStart(2, "0");
+  seconds %= 3600;
+  let minutes = Math.floor(seconds / 60)
+    .toString()
+    .padStart(2, "0");
+  seconds = (seconds % 60).toString().padStart(2, "0");
+  return `${hours}:${minutes}:${seconds}`;
 }
 
 // function calcAPGain(timestamp) {
@@ -211,16 +225,19 @@ async function main() {
   const data = await fetch("data.json").then((response) => response.json());
   let raidData = data["data"];
   let targetData = data["target"];
+  let startTime = data["startTime"];
+  let endTime = data["endTime"];
   let timeArray = raidData["timestamp"];
   delete raidData["timestamp"];
 
   let etaResult = [];
-  let bossNames = Object.keys(raidData);
-  for (let i = 0; i < bossNames.length; i++) {
-    let boss = bossNames[i];
-    if (nth(raidData[boss], -1) <= targetData[boss]) {
-      let eta = calcETA(raidData[boss], timeArray, targetData[boss], 100);
-      etaResult.push([boss, eta, i]);
+  let runTime = [];
+  for (const [boss, bossData] of Object.entries(raidData)) {
+    if (nth(bossData, -1) < targetData[boss]) {
+      let eta = calcETA(bossData, timeArray, targetData[boss], 100);
+      etaResult.push([boss, eta]);
+    } else {
+      runTime.push([boss, startTime[boss], endTime[boss]]);
     }
   }
 
@@ -234,6 +251,24 @@ async function main() {
   }
   // }
 
+  if (runTime) {
+    const runtimeText = document.getElementById("runtimeText");
+    runtimeText.appendChild(createPText("Boss run time:"));
+    runTime = runTime.sort((a, b) => a[2] - b[2]);
+    for (const [boss, bossStart, bossEnd] of runTime) {
+      let endDate = new Date(bossEnd * 1000);
+      const timeZone = "Asia/Tokyo";
+      let zonedDate = utcToZonedTime(endDate, timeZone);
+      let bossEndText = format(zonedDate, "M/d HH:mm zzz", {
+        timeZone,
+        locale: ja,
+      });
+      let runtime = getRuntimeText(bossStart, bossEnd);
+      let runTimeText = `${boss}: ${runtime} (${bossEndText})`;
+      runtimeText.appendChild(createPText(runTimeText));
+    }
+  }
+
   Accessibility(Highcharts);
   Exporting(Highcharts);
   ExportData(Highcharts);
@@ -243,7 +278,16 @@ async function main() {
    * In order to synchronize tooltips and crosshairs, override the
    * built-in events with handlers defined on the parent element.
    */
-  let stillGoingBoss = Math.max(...etaResult.map((x) => x[2]));
+  let stillGoingBoss = 0;
+  let currentLength = 0;
+  let bossNames = Object.keys(raidData);
+  for (let i = 0; i < bossNames.length; i++) {
+    let boss = bossNames[i];
+    if (raidData[boss].length > currentLength) {
+      stillGoingBoss = i;
+      currentLength = raidData[boss].length;
+    }
+  }
   ["mousemove", "mouseleave", "touchstart", "touchmove"].forEach(function (
     eventType
   ) {
