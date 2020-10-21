@@ -266,15 +266,17 @@ async function main() {
     }
   }
 
-  const etaTextDiv = document.getElementById("etaText");
-  etaResult = etaResult.sort((a, b) => a.eta - b.eta);
-  for (const bossEta of etaResult) {
-    let [dateString, difference] = futureStrings(bossEta.eta, true);
-    let etaText = `${bossEta.boss}: ${difference} (${dateString})`;
-    etaTextDiv.appendChild(createPText(etaText));
+  if (etaResult.length > 0) {
+    const etaTextDiv = document.getElementById("etaText");
+    etaResult = etaResult.sort((a, b) => a.eta - b.eta);
+    for (const bossEta of etaResult) {
+      let [dateString, difference] = futureStrings(bossEta.eta, true);
+      let etaText = `${bossEta.boss}: ${difference} (${dateString})`;
+      etaTextDiv.appendChild(createPText(etaText));
+    }
   }
 
-  if (runTime) {
+  if (runTime.length > 0) {
     const runtimeText = document.getElementById("runtimeText");
     runtimeText.appendChild(createPText("Boss run time:"));
     runTime = runTime.sort((a, b) => a.endTime - b.endTime);
