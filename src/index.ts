@@ -1,37 +1,23 @@
 import { formatDistanceToNowStrict, formatDistanceToNow } from "date-fns";
-import ja from "date-fns/locale/ja";
 import { format, utcToZonedTime } from "date-fns-tz";
 import * as Highcharts from "highcharts";
 import Accessibility from "highcharts/modules/accessibility";
+import Boost from "highcharts/modules/boost";
 import Exporting from "highcharts/modules/exporting";
 import ExportData from "highcharts/modules/export-data";
 import { nth } from "lodash-es";
-import Boost from "highcharts/modules/boost";
 
-// const BOSS_COLOR = {
-//   Fran: "#55A868",
-//   Helena: "#64B5CD",
-//   Nito: "#4C72B0",
-//   Nobu: "#C44E52",
-//   Raikou: "#8172B2",
-//   Sabers: "#CCB974",
-// };
-
-function createPText(string) {
+function createPText(string: string) {
   let newPElement = document.createElement("p");
   newPElement.textContent = string;
   return newPElement;
 }
 
-function createHighChartsArray(dataArray, timeArray) {
-  let outArray = [];
-  for (let i = 0; i < dataArray.length; i++) {
-    outArray.push([timeArray[i] * 1000, dataArray[i]]);
-  }
-  return outArray;
+function createHighChartsArray(timeData: number[][]) {
+  return timeData.map((x) => [x[0] * 1000, x[1]]);
 }
 
-function diffArray(origArray) {
+function diffArray(origArray: number[]) {
   let startArray = origArray.slice(0, -1);
   let endArray = origArray.slice(1);
   let outArray = [];
@@ -41,28 +27,28 @@ function diffArray(origArray) {
   return outArray;
 }
 
-function rate(dataArray, timeArray, scale) {
-  let dataDiff = diffArray(dataArray);
+function rate(dataTimeArray: number[][], scale: number = null) {
   if (!scale) {
-    scale = Math.sign(dataDiff[0]);
+    scale = Math.sign(dataTimeArray[1][1] - dataTimeArray[0][1]);
   }
-  dataDiff = dataDiff.map((x) => x * scale);
-  let timeDiff = diffArray(timeArray);
-  let outArray = [];
-  for (let i = 0; i < dataDiff.length; i++) {
-    if (dataDiff[i] > 0) {
-      outArray.push(dataDiff[i] / timeDiff[i]);
-    }
+  let startArray = dataTimeArray.slice(0, -1);
+  let endArray = dataTimeArray.slice(1);
+  let outArray: number[][] = [];
+  for (let i = 0; i < startArray.length; i++) {
+    let [startTime, startData] = startArray[i];
+    let [endTime, endData] = endArray[i];
+    let rate = ((endData - startData) * scale) / (endTime - startTime);
+    outArray.push([startTime, rate]);
   }
   return outArray;
 }
 
-function calcETA(dataArray, timeArray, target, n) {
-  n = Math.min(n, dataArray.length);
-  let lastData = nth(dataArray, -1);
-  let lastTime = nth(timeArray, -1);
-  let dataDiff = lastData - nth(dataArray, -n);
-  let timeDiff = lastTime - nth(timeArray, -n);
+function calcETA(hpTime: number[][], target: number, n: number) {
+  n = Math.min(n, hpTime.length);
+  let [lastTime, lastData] = nth(hpTime, -1);
+  let [firstTime, firstData] = nth(hpTime, -n);
+  let dataDiff = lastData - firstData;
+  let timeDiff = lastTime - firstTime;
   let avgRate = dataDiff / timeDiff;
   if (avgRate === 0) {
     avgRate = Math.sign(dataDiff);
@@ -71,7 +57,7 @@ function calcETA(dataArray, timeArray, target, n) {
   return lastTime + timeRemaining;
 }
 
-function futureStrings(timestamp, strict) {
+function futureStrings(timestamp: number, strict: boolean) {
   let futureDate = new Date(timestamp * 1000);
   let futureString = format(futureDate, "M/d HH:mm zzz");
   let difference = "";
@@ -88,17 +74,17 @@ function futureStrings(timestamp, strict) {
   return [futureString, difference];
 }
 
-function getRuntimeText(start, end) {
+function getRuntimeText(start: number, end: number) {
   let seconds = end - start;
-  let hours = Math.floor(seconds / 3600)
+  let hour_str = Math.floor(seconds / 3600)
     .toString()
     .padStart(2, "0");
   seconds %= 3600;
-  let minutes = Math.floor(seconds / 60)
+  let minute_str = Math.floor(seconds / 60)
     .toString()
     .padStart(2, "0");
-  seconds = (seconds % 60).toString().padStart(2, "0");
-  return `${hours}:${minutes}:${seconds}`;
+  let second_str = (seconds % 60).toString().padStart(2, "0");
+  return `${hour_str}:${minute_str}:${second_str}`;
 }
 
 // function calcAPGain(timestamp) {
@@ -117,13 +103,22 @@ function getRuntimeText(start, end) {
 //   return bossesString;
 // }
 
-function genOpts(data, config) {
-  let series = [];
-  for (const boss in data) {
+interface chartConfig {
+  title: string;
+  syncExtremes?: (e: Highcharts.AxisSetExtremesEventObject) => void;
+  yAxisTitle?: string;
+  yAxisMin?: number;
+  yAxisMax?: number;
+  valueDecimals?: number;
+}
+
+function genOpts(data: Record<string, number[][]>, config: chartConfig) {
+  let series: Highcharts.SeriesOptionsType[] = [];
+  for (const [boss, bossData] of Object.entries(data)) {
     series.push({
       type: "line",
       name: boss,
-      data: data[boss],
+      data: bossData,
       // color: BOSS_COLOR[boss],
     });
   }
@@ -132,7 +127,7 @@ function genOpts(data, config) {
       style: {
         fontFamily: "Fira Sans",
       },
-      zoomType: "x",
+      zoomType: "x" as Highcharts.OptionsZoomTypeValue,
       marginLeft: 80,
     },
     title: {
@@ -148,12 +143,12 @@ function genOpts(data, config) {
           fontSize: "1.25em",
         },
       },
-      type: "datetime",
+      type: "datetime" as Highcharts.AxisTypeValue,
       gridLineWidth: 1,
       crosshair: {
         // width: 2,
         // color: "gray",
-        dashStyle: "Dash",
+        dashStyle: "Dash" as Highcharts.DashStyleValue,
       },
       labels: {
         style: {
@@ -211,9 +206,14 @@ function genOpts(data, config) {
         },
         lineWidth: 1,
         states: {
-          hover: false,
+          hover: {
+            enabled: true,
+          },
+          inactive: {
+            enabled: false,
+          },
         },
-        threshold: null,
+        // threshold: null,
         boostThreshold: 1,
       },
     },
@@ -221,50 +221,80 @@ function genOpts(data, config) {
   };
 }
 
+interface raidData {
+  data: Record<string, number[][]>;
+  target: Record<string, number>;
+  scale: Record<string, number>;
+  startTime: Record<string, number>;
+  endTime: Record<string, number>;
+}
+
+interface etaResult {
+  boss: string;
+  eta: number;
+}
+
+interface runTime {
+  boss: string;
+  startTime: number;
+  endTime: number;
+}
+
+declare module "highcharts" {
+  interface Point {
+    highlight(event: PointerEvent | TouchEvent | MouseEvent): void;
+  }
+  interface Series {
+    searchPoint(
+      event: PointerEventObject,
+      compareX: boolean
+    ): Point | undefined;
+  }
+}
+
 async function main() {
-  const data = await fetch("data.json").then((response) => response.json());
-  let raidData = data["data"];
+  const data: raidData = await fetch("data.json").then((response) =>
+    response.json()
+  );
+  let hpTimeData = data["data"];
   let targetData = data["target"];
   let startTime = data["startTime"];
   let endTime = data["endTime"];
-  let timeArray = raidData["timestamp"];
-  delete raidData["timestamp"];
 
-  let etaResult = [];
-  let runTime = [];
-  for (const [boss, bossData] of Object.entries(raidData)) {
-    if (nth(bossData, -1) < targetData[boss]) {
-      let eta = calcETA(bossData, timeArray, targetData[boss], 100);
-      etaResult.push([boss, eta]);
+  let etaResult: etaResult[] = [];
+  let runTime: runTime[] = [];
+  for (const [boss, bossData] of Object.entries(hpTimeData)) {
+    if (nth(bossData, -1)[1] < targetData[boss]) {
+      let eta = calcETA(bossData, targetData[boss], 100);
+      etaResult.push({ boss: boss, eta: eta });
     } else {
-      runTime.push([boss, startTime[boss], endTime[boss]]);
+      runTime.push({
+        boss: boss,
+        startTime: startTime[boss],
+        endTime: endTime[boss],
+      });
     }
   }
 
   const etaTextDiv = document.getElementById("etaText");
-  etaResult = etaResult.sort((a, b) => a[1] - b[1]);
-  // if (etaResult.length > 3) {
-  for (const [boss, eta] of etaResult) {
-    let [dateString, difference] = futureStrings(eta, true);
-    let etaText = `${boss}: ${difference} (${dateString})`;
+  etaResult = etaResult.sort((a, b) => a.eta - b.eta);
+  for (const bossEta of etaResult) {
+    let [dateString, difference] = futureStrings(bossEta.eta, true);
+    let etaText = `${bossEta.boss}: ${difference} (${dateString})`;
     etaTextDiv.appendChild(createPText(etaText));
   }
-  // }
 
   if (runTime) {
     const runtimeText = document.getElementById("runtimeText");
     runtimeText.appendChild(createPText("Boss run time:"));
-    runTime = runTime.sort((a, b) => a[2] - b[2]);
-    for (const [boss, bossStart, bossEnd] of runTime) {
-      let endDate = new Date(bossEnd * 1000);
-      const timeZone = "Asia/Tokyo";
+    runTime = runTime.sort((a, b) => a.endTime - b.endTime);
+    for (const bossRunTime of runTime) {
+      let endDate = new Date(bossRunTime.endTime * 1000);
+      const timeZone = "America/Los_Angeles";
       let zonedDate = utcToZonedTime(endDate, timeZone);
-      let bossEndText = format(zonedDate, "M/d HH:mm zzz", {
-        timeZone,
-        locale: ja,
-      });
-      let runtime = getRuntimeText(bossStart, bossEnd);
-      let runTimeText = `${boss}: ${runtime} (${bossEndText})`;
+      let bossEndText = format(zonedDate, "M/d HH:mm zzz", { timeZone });
+      let runtime = getRuntimeText(bossRunTime.startTime, bossRunTime.endTime);
+      let runTimeText = `${bossRunTime.boss}: ${runtime} (${bossEndText})`;
       runtimeText.appendChild(createPText(runTimeText));
     }
   }
@@ -280,37 +310,39 @@ async function main() {
    */
   let stillGoingBoss = 0;
   let currentLength = 0;
-  let bossNames = Object.keys(raidData);
+  let bossNames = Object.keys(hpTimeData);
   for (let i = 0; i < bossNames.length; i++) {
     let boss = bossNames[i];
-    if (raidData[boss].length > currentLength) {
+    if (hpTimeData[boss].length > currentLength) {
       stillGoingBoss = i;
-      currentLength = raidData[boss].length;
+      currentLength = hpTimeData[boss].length;
     }
   }
+
   ["mousemove", "mouseleave", "touchstart", "touchmove"].forEach(function (
     eventType
   ) {
-    document.getElementById("charts").addEventListener(eventType, function (e) {
-      for (let i = 0; i < Highcharts.charts.length; i++) {
-        let chart = Highcharts.charts[i];
-        let event = chart.pointer.normalize(e); // Find coordinates within the chart
-        let point;
-        for (let j = stillGoingBoss; j < chart.series.length && !point; j++) {
-          point = chart.series[j].searchPoint(event, true);
-        }
-        if (point) {
-          if (["mousemove", "touchmove", "touchstart"].includes(e.type)) {
-            point.onMouseOver();
-            chart.xAxis[0].drawCrosshair(event, point);
-          } else {
-            point.onMouseOut();
-            chart.tooltip.hide(point);
-            chart.xAxis[0].hideCrosshair();
+    document
+      .getElementById("charts")
+      .addEventListener(eventType, function (
+        e: PointerEvent | TouchEvent | MouseEvent
+      ) {
+        for (let i = 0; i < Highcharts.charts.length; i++) {
+          let chart = Highcharts.charts[i];
+          let event = chart.pointer.normalize(e); // Find coordinates within the chart
+          let point = chart.series[stillGoingBoss].searchPoint(event, true);
+          if (point) {
+            if (["mousemove", "touchmove", "touchstart"].includes(e.type)) {
+              point.onMouseOver();
+              chart.xAxis[0].drawCrosshair(event, point);
+            } else {
+              point.onMouseOut();
+              chart.tooltip.hide();
+              chart.xAxis[0].hideCrosshair();
+            }
           }
         }
-      }
-    });
+      });
   });
 
   /**
@@ -324,17 +356,19 @@ async function main() {
   /**
    * Highlight a point by showing tooltip, setting hover state and draw crosshair
    */
-  Highcharts.Point.prototype.highlight = function (event) {
+  Highcharts.Point.prototype.highlight = function (
+    event: PointerEvent | TouchEvent | MouseEvent
+  ) {
     event = this.series.chart.pointer.normalize(event);
     this.onMouseOver(); // Show the hover marker
-    this.series.chart.tooltip.refresh([this]); // Show the tooltip
+    this.series.chart.tooltip.refresh(this); // Show the tooltip
     this.series.chart.xAxis[0].drawCrosshair(event, this); // Show the crosshair
   };
 
   /**
    * Synchronize zooming through the setExtremes event handler.
    */
-  function syncExtremes(e) {
+  function syncExtremes(e: Highcharts.AxisSetExtremesEventObject) {
     var thisChart = this.chart;
     if (e.trigger !== "syncExtremes") {
       // Prevent feedback loop
@@ -356,30 +390,28 @@ async function main() {
       numericSymbols: ["K", "M", "B", "T", "P", "E"],
     },
     time: {
-      timezoneOffset: -9 * 60, // Japan Standard Time
+      timezoneOffset: 7 * 60, // Pacific Daylight Time
     },
   });
 
-  let scaledHpData = {};
-  for (const boss in raidData) {
-    scaledHpData[boss] = raidData[boss].map((x) =>
-      Math.max((targetData[boss] - x) / data["scale"][boss], 0)
-    );
+  let scaledHpData: Record<string, number[][]> = {};
+  for (const [boss, bossData] of Object.entries(hpTimeData)) {
+    scaledHpData[boss] = bossData.map((x) => [
+      x[0],
+      Math.max((targetData[boss] - x[1]) / data["scale"][boss], 0),
+    ]);
   }
 
-  let hpData = {};
-  for (const boss in scaledHpData) {
-    hpData[boss] = createHighChartsArray(
-      scaledHpData[boss].slice(1),
-      timeArray.slice(1)
-    );
+  let hpData: Record<string, number[][]> = {};
+  for (const [boss, bossData] of Object.entries(scaledHpData)) {
+    hpData[boss] = createHighChartsArray(bossData);
   }
 
   Highcharts.chart(
     "hpChart",
     genOpts(hpData, {
-      title: "JP Guda 5 Raid",
-      yAxisTitle: "Count",
+      title: "NA Oniland Raid HP",
+      yAxisTitle: "HP",
       // yAxisMin: etaResult.length < 6 ? 0 : null,
       // yAxisMax: 1000,
       valueDecimals: 0,
@@ -387,24 +419,18 @@ async function main() {
     })
   );
 
-  let scaledHpDataForDps = {};
-  for (const boss in scaledHpData) {
-    scaledHpDataForDps[boss] = scaledHpData[boss].filter((x) => x > 0);
-  }
-
-  let dpsData = {};
-  for (const boss in scaledHpDataForDps) {
+  let dpsData: Record<string, number[][]> = {};
+  for (const [boss, bossData] of Object.entries(scaledHpData)) {
     dpsData[boss] = createHighChartsArray(
-      rate(scaledHpDataForDps[boss], timeArray),
-      timeArray.slice(1)
+      rate(bossData.filter((x) => x[1] > 0))
     );
   }
 
   Highcharts.chart(
     "dpsChart",
     genOpts(dpsData, {
-      title: "JP Guda 5 Raid DPS",
-      yAxisTitle: "KPS (Kills per Second)",
+      title: "NA Oniland Raid DPS",
+      yAxisTitle: "DPS (Damage per Second)",
       valueDecimals: 2,
       syncExtremes: syncExtremes,
     })
