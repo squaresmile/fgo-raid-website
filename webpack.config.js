@@ -18,6 +18,12 @@ module.exports = {
       { test: /\.js$/, loader: "source-map-loader" },
     ],
   },
+  cache: {
+    type: "filesystem",
+    buildDependencies: {
+      config: [__filename],
+    },
+  },
   devServer: {
     contentBase: path.join(__dirname, "dist"),
     compress: true,

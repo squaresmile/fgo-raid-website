@@ -17,16 +17,6 @@ function createHighChartsArray(timeData: number[][]) {
   return timeData.map((x) => [x[0] * 1000, x[1]]);
 }
 
-function diffArray(origArray: number[]) {
-  let startArray = origArray.slice(0, -1);
-  let endArray = origArray.slice(1);
-  let outArray = [];
-  for (let i = 0; i < startArray.length; i++) {
-    outArray.push(endArray[i] - startArray[i]);
-  }
-  return outArray;
-}
-
 function rate(dataTimeArray: number[][], scale: number = null) {
   if (!scale) {
     scale = Math.sign(dataTimeArray[1][1] - dataTimeArray[0][1]);
