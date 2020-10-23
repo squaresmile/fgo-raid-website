@@ -434,8 +434,8 @@ async function main() {
   Highcharts.chart(
     "hpChart",
     genOpts(hpData, {
-      title: "NA Oniland Raid HP",
-      yAxisTitle: "HP",
+      title: "JP Nightingale reurn box count",
+      yAxisTitle: "Box Count",
       // yAxisMin: etaResult.length < 6 ? 0 : null,
       // yAxisMax: 1000,
       valueDecimals: 0,
@@ -453,8 +453,8 @@ async function main() {
   Highcharts.chart(
     "dpsChart",
     genOpts(dpsData, {
-      title: "NA Oniland Raid DPS",
-      yAxisTitle: "DPS (Damage per Second)",
+      title: "JP Nightingale reurn rate",
+      yAxisTitle: "BPS (Box per second)",
       valueDecimals: 2,
       syncExtremes: syncExtremes,
     })
