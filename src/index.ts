@@ -213,19 +213,22 @@ function genOpts(data: Record<string, number[][]>, config: chartConfig) {
 
 interface raidData {
   data: Record<string, number[][]>;
-  target: Record<string, number>;
+  target: Record<string, number[]>;
   scale: Record<string, number>;
-  startTime: Record<string, number>;
-  endTime: Record<string, number>;
+  startTime: Record<string, number[]>;
+  endTime: Record<string, number[]>;
 }
 
 interface etaResult {
   boss: string;
   eta: number;
+  target: number;
+  manyTargets: boolean;
 }
 
 interface runTime {
   boss: string;
+  target: number;
   startTime: number;
   endTime: number;
 }
@@ -246,23 +249,40 @@ async function main() {
   const data: raidData = await fetch("data.json").then((response) =>
     response.json()
   );
-  let hpTimeData = data["data"];
-  let targetData = data["target"];
-  let startTime = data["startTime"];
-  let endTime = data["endTime"];
+  const hpTimeData = data["data"];
+  const targetData = data["target"];
+  const startTime = data["startTime"];
+  const endTime = data["endTime"];
 
   let etaResult: etaResult[] = [];
   let runTime: runTime[] = [];
   for (const [boss, bossData] of Object.entries(hpTimeData)) {
-    if (nth(bossData, -1)[1] < targetData[boss]) {
-      let eta = calcETA(bossData, targetData[boss], 100);
-      etaResult.push({ boss: boss, eta: eta });
-    } else {
-      runTime.push({
-        boss: boss,
-        startTime: startTime[boss],
-        endTime: endTime[boss],
-      });
+    for (let i = 0; i < targetData[boss].length; i++) {
+      let bossTarget = targetData[boss][i];
+      if (nth(bossData, -1)[1] < bossTarget) {
+        let eta = calcETA(bossData, bossTarget, 100);
+        etaResult.push({
+          boss: boss,
+          eta: eta,
+          target: bossTarget,
+          manyTargets: targetData[boss].length > 1,
+        });
+      } else {
+        let bossStartTime = startTime[boss];
+        let bossEndTime = endTime[boss];
+        if (
+          bossStartTime.length >= i + 1 &&
+          bossEndTime.length >= i + 1 &&
+          bossEndTime[i] !== 0
+        ) {
+          runTime.push({
+            boss: boss,
+            target: bossTarget,
+            startTime: bossStartTime[i],
+            endTime: bossEndTime[i],
+          });
+        }
+      }
     }
   }
 
@@ -271,7 +291,14 @@ async function main() {
     etaResult = etaResult.sort((a, b) => a.eta - b.eta);
     for (const bossEta of etaResult) {
       let [dateString, difference] = futureStrings(bossEta.eta, true);
-      let etaText = `${bossEta.boss}: ${difference} (${dateString})`;
+      let etaText;
+      if (bossEta.manyTargets) {
+        etaText = `${
+          bossEta.boss
+        } to reach ${bossEta.target.toLocaleString()}: ${difference} (${dateString})`;
+      } else {
+        etaText = `${bossEta.boss}: ${difference} (${dateString})`;
+      }
       etaTextDiv.appendChild(createPText(etaText));
     }
   }
@@ -388,10 +415,15 @@ async function main() {
 
   let scaledHpData: Record<string, number[][]> = {};
   for (const [boss, bossData] of Object.entries(hpTimeData)) {
-    scaledHpData[boss] = bossData.map((x) => [
-      x[0],
-      Math.max((targetData[boss] - x[1]) / data["scale"][boss], 0),
-    ]);
+    let bossScale = data["scale"][boss];
+    if (bossScale > 0) {
+      scaledHpData[boss] = bossData.map((x) => [
+        x[0],
+        Math.max((targetData[boss][0] - x[1]) / data["scale"][boss], 0),
+      ]);
+    } else if (bossScale === -1) {
+      scaledHpData[boss] = bossData;
+    }
   }
 
   let hpData: Record<string, number[][]> = {};
