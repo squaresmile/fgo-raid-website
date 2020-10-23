@@ -96,6 +96,7 @@ function getRuntimeText(start: number, end: number) {
 interface chartConfig {
   title: string;
   syncExtremes?: (e: Highcharts.AxisSetExtremesEventObject) => void;
+  xAxisTitle?: string;
   yAxisTitle?: string;
   yAxisMin?: number;
   yAxisMax?: number;
@@ -128,7 +129,7 @@ function genOpts(data: Record<string, number[][]>, config: chartConfig) {
     },
     xAxis: {
       title: {
-        text: "Japan Standard Time",
+        text: config.xAxisTitle,
         style: {
           fontSize: "1.25em",
         },
@@ -211,12 +212,23 @@ function genOpts(data: Record<string, number[][]>, config: chartConfig) {
   };
 }
 
+interface eventConfig {
+  pageTitle: string;
+  timezoneOffset: number;
+  timezoneName: string;
+  hpTitle: string;
+  hpUnit: string;
+  dpsTitle: string;
+  dpsUnit: string;
+}
+
 interface raidData {
   data: Record<string, number[][]>;
   target: Record<string, number[]>;
   scale: Record<string, number>;
   startTime: Record<string, number[]>;
   endTime: Record<string, number[]>;
+  config: eventConfig;
 }
 
 interface etaResult {
@@ -253,6 +265,10 @@ async function main() {
   const targetData = data["target"];
   const startTime = data["startTime"];
   const endTime = data["endTime"];
+  const config = data["config"];
+
+  const pageTitleDiv = document.getElementById("pageTitle");
+  pageTitleDiv.innerText = config.pageTitle;
 
   let etaResult: etaResult[] = [];
   let runTime: runTime[] = [];
@@ -409,7 +425,7 @@ async function main() {
       numericSymbols: ["K", "M", "B", "T", "P", "E"],
     },
     time: {
-      timezoneOffset: 7 * 60, // Pacific Daylight Time
+      timezoneOffset: config.timezoneOffset * 60,
     },
   });
 
@@ -434,8 +450,9 @@ async function main() {
   Highcharts.chart(
     "hpChart",
     genOpts(hpData, {
-      title: "JP Nightingale reurn box count",
-      yAxisTitle: "Box Count",
+      title: config.hpTitle,
+      xAxisTitle: config.timezoneName,
+      yAxisTitle: config.hpUnit,
       // yAxisMin: etaResult.length < 6 ? 0 : null,
       // yAxisMax: 1000,
       valueDecimals: 0,
@@ -453,8 +470,9 @@ async function main() {
   Highcharts.chart(
     "dpsChart",
     genOpts(dpsData, {
-      title: "JP Nightingale reurn rate",
-      yAxisTitle: "BPS (Box per second)",
+      title: config.dpsTitle,
+      xAxisTitle: config.timezoneName,
+      yAxisTitle: config.dpsUnit,
       valueDecimals: 2,
       syncExtremes: syncExtremes,
     })
