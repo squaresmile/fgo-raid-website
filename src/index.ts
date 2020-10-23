@@ -168,6 +168,7 @@ function genOpts(data: Record<string, number[][]>, config: chartConfig) {
     tooltip: {
       shadow: false,
       animation: false,
+      shape: "square" as Highcharts.TooltipShapeValue,
       shared: true,
       valueDecimals: config.valueDecimals,
       style: {
