@@ -19,7 +19,12 @@ function createHighChartsArray(timeData: number[][]) {
 
 function rate(dataTimeArray: number[][], scale: number = null) {
   if (!scale) {
-    scale = Math.sign(dataTimeArray[1][1] - dataTimeArray[0][1]);
+    for (let i = 1; i < dataTimeArray.length; i++) {
+      scale = Math.sign(dataTimeArray[i][1] - dataTimeArray[i - 1][1]);
+      if (scale !== 0) {
+        break;
+      }
+    }
   }
   let startArray = dataTimeArray.slice(0, -1);
   let endArray = dataTimeArray.slice(1);
@@ -463,9 +468,7 @@ async function main() {
 
   let dpsData: Record<string, number[][]> = {};
   for (const [boss, bossData] of Object.entries(scaledHpData)) {
-    dpsData[boss] = createHighChartsArray(
-      rate(bossData.filter((x) => x[1] > 0))
-    );
+    dpsData[boss] = createHighChartsArray(rate(bossData));
   }
 
   Highcharts.chart(
