@@ -220,6 +220,7 @@ function genOpts(data: Record<string, number[][]>, config: chartConfig) {
 
 interface eventConfig {
   pageTitle: string;
+  etaLookBack: number;
   timezoneOffset: number;
   timezoneName: string;
   hpTitle: string;
@@ -282,7 +283,7 @@ async function main() {
     for (let i = 0; i < targetData[boss].length; i++) {
       let bossTarget = targetData[boss][i];
       if (nth(bossData, -1)[1] < bossTarget) {
-        let eta = calcETA(bossData, bossTarget, 100);
+        let eta = calcETA(bossData, bossTarget, config.etaLookBack);
         etaResult.push({
           boss: boss,
           eta: eta,
