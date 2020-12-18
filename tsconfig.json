@@ -4,9 +4,12 @@
     "allowJs": true,
     "target": "ES6",
     "noImplicitAny": true,
+    "strict": true,
     "removeComments": true,
     "sourceMap": true,
     "moduleResolution": "node"
   },
-  "include": ["./src/**/*"]
+  "include": [
+    "./src/**/*"
+  ]
 }
