@@ -1,22 +1,17 @@
+import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
+import { format, utcToZonedTime } from "date-fns-tz";
+import { ASAP } from "downsample";
 import * as Highcharts from "highcharts";
 import Accessibility from "highcharts/modules/accessibility";
 import Boost from "highcharts/modules/boost";
 import ExportData from "highcharts/modules/export-data";
 import Exporting from "highcharts/modules/exporting";
-import { format, utcToZonedTime } from "date-fns-tz";
-import { formatDistanceToNow, formatDistanceToNowStrict } from "date-fns";
 import { nth } from "lodash-es";
 
 function createPText(string: string) {
   let newPElement = document.createElement("p");
   newPElement.innerText = string;
   return newPElement;
-}
-
-function createHighChartsArray(
-  timeData: [number, number][]
-): [number, number][] {
-  return timeData.map((x) => [x[0] * 1000, x[1]]);
 }
 
 function rate(dataTimeArray: [number, number][], dataScale?: number) {
@@ -429,7 +424,7 @@ async function main() {
       // Prevent feedback loop
       Highcharts.charts.forEach(function (chart) {
         if (chart && chart !== thisChart) {
-          if (chart.xAxis && chart.xAxis[0].setExtremes) {
+          if (chart.xAxis) {
             // It is null while updating
             chart.xAxis[0].setExtremes(e.min, e.max, undefined, false, {
               trigger: "syncExtremes",
@@ -464,7 +459,7 @@ async function main() {
 
   let hpData: Record<string, [number, number][]> = {};
   for (const [boss, bossData] of Object.entries(scaledHpData)) {
-    hpData[boss] = createHighChartsArray(bossData);
+    hpData[boss] = bossData.map((x) => [x[0] * 1000, x[1]]);
   }
 
   Highcharts.chart(
@@ -482,7 +477,13 @@ async function main() {
 
   let dpsData: Record<string, [number, number][]> = {};
   for (const [boss, bossData] of Object.entries(scaledHpData)) {
-    dpsData[boss] = createHighChartsArray(rate(bossData));
+    const rateData = rate(bossData);
+    const chartWidth = Math.min(500, Math.round(rateData.length / 2));
+    const smoothedData = ASAP(rateData, chartWidth) as {
+      x: number;
+      y: number;
+    }[];
+    dpsData[boss] = smoothedData.map((point) => [point.x, point.y]);
   }
 
   Highcharts.chart(
@@ -496,4 +497,5 @@ async function main() {
     })
   );
 }
+
 main();

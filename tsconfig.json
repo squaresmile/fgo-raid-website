@@ -1,8 +1,11 @@
 {
   "compilerOptions": {
     "outDir": "./built",
-    "allowJs": true,
     "target": "ES6",
+    "lib": [
+      "ESNext",
+      "DOM"
+    ],
     "noImplicitAny": true,
     "strict": true,
     "removeComments": true,
