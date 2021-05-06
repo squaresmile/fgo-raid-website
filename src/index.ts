@@ -483,7 +483,7 @@ async function main() {
       x: number;
       y: number;
     }[];
-    dpsData[boss] = smoothedData.map((point) => [point.x, point.y]);
+    dpsData[boss] = smoothedData.map((point) => [point.x * 1000, point.y]);
   }
 
   Highcharts.chart(

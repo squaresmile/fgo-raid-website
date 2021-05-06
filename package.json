@@ -4,7 +4,8 @@
   "description": "FGO raid website",
   "main": "index.js",
   "scripts": {
-    "build": "esbuild src/index.ts --define:process.env.NODE_ENV=\\\"production\\\" --bundle --minify --target=es6 --sourcemap --outfile=dist/main.js"
+    "build": "esbuild src/index.ts --define:process.env.NODE_ENV=\\\"production\\\" --bundle --minify --target=es6 --sourcemap --outfile=dist/main.js",
+    "dev": "esbuild src/index.ts --bundle --target=es6 --sourcemap --outfile=dist/main.js"
   },
   "author": "",
   "repository": {
@@ -14,11 +15,11 @@
   "license": "ISC",
   "dependencies": {
     "@types/lodash-es": "^4.17.4",
-    "date-fns": "^2.21.1",
+    "date-fns": "^2.21.2",
     "date-fns-tz": "^1.1.4",
     "downsample": "^1.4.0",
-    "esbuild": "^0.11.17",
-    "highcharts": "^9.0.1",
+    "esbuild": "^0.11.19",
+    "highcharts": "^9.1.0",
     "lodash-es": "^4.17.21",
     "typescript": "^4.2.4"
   },
