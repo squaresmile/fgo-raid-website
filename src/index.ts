@@ -108,6 +108,13 @@ interface chartConfig {
   valueDecimals?: number;
 }
 
+const fontFamily = `
+"Fira Sans",
+-apple-system, "BlinkMacSystemFont",
+"Segoe UI", Helvetica, Arial,
+sans-serif, "Apple Color Emoji", "Segoe UI Emoji"
+`;
+
 function genOpts(
   data: Record<string, [number, number][]>,
   config: chartConfig
@@ -124,7 +131,7 @@ function genOpts(
   return {
     chart: {
       style: {
-        fontFamily: "Fira Sans",
+        fontFamily: fontFamily,
       },
       zoomType: "x" as Highcharts.OptionsZoomTypeValue,
       marginLeft: 80,
